@@ -6,3 +6,7 @@ idea-nginx.jar
 build/
 vendor/
 *.iml
+.idea/
+.gradle/
+.intellijPlatform
+.fastRequest
