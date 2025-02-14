@@ -19,6 +19,8 @@ package net.ishchenko.idea.nginx.run;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.options.ex.SingleConfigurableEditor;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.DimensionService;
 import net.ishchenko.idea.nginx.configurator.NginxConfigurationManager;
 import net.ishchenko.idea.nginx.configurator.NginxServerDescriptor;
@@ -36,7 +38,7 @@ import java.awt.*;
  */
 public class NginxRunSettingsEditor extends SettingsEditor<NginxRunConfiguration> {
 
-    private NginxRunConfiguration config;
+    private final NginxRunConfiguration config;
     private Mediator mediator;
 
     public NginxRunSettingsEditor(NginxRunConfiguration config) {
@@ -44,21 +46,25 @@ public class NginxRunSettingsEditor extends SettingsEditor<NginxRunConfiguration
         this.mediator = new Mediator();
     }
 
+    @Override
     protected void applyEditorTo(NginxRunConfiguration s) throws ConfigurationException {
-        mediator.applyEditorTo(s);
+        this.mediator.applyEditorTo(s);
     }
 
+    @Override
     protected void resetEditorFrom(NginxRunConfiguration s) {
-        mediator.resetEditorFrom(s);
+        this.mediator.resetEditorFrom(s);
     }
 
+    @Override
     @NotNull
     protected JComponent createEditor() {
-        return new NginxRunSettingsForm(mediator).getPanel();
+        return new NginxRunSettingsForm(this.mediator).getPanel();
     }
 
+    @Override
     protected void disposeEditor() {
-        mediator = null;
+        this.mediator = null;
     }
 
     class Mediator {
@@ -66,75 +72,80 @@ public class NginxRunSettingsEditor extends SettingsEditor<NginxRunConfiguration
         NginxRunSettingsForm form;
 
         void showServerManagerDialog() {
-            //This is a little hack.
-            //I could have used ShowSettingsUtil.editConfigurable(), but it gives me
-            //little control over opening window. The main problem is dimensions.
-            //The window will be too small on first open. So, i'm fixing dimensions on first open.
-            //The dimension key generation logic is hidden in ShowSettingsUtil and I had to
-            //copy key generation code here
+            // This is a little hack.
+            // I could have used ShowSettingsUtil.editConfigurable(), but it gives me
+            // little control over opening window. The main problem is dimensions.
+            // The window will be too small on first open. So, i'm fixing dimensions on first open.
+            // The dimension key generation logic is hidden in ShowSettingsUtil and I had to
+            // copy key generation code here
             NginxConfigurationManager configManager = NginxConfigurationManager.getInstance();
-            String dimensionServiceKey = "#" + configManager.getDisplayName().replaceAll("\n", "_").replaceAll(" ", "_");
+            String dimensionServiceKey = "#" + configManager.getDisplayName()
+                    .replaceAll("\n", "_")
+                    .replaceAll(" ", "_");
             DimensionService dimensionService = DimensionService.getInstance();
-            if (dimensionService.getSize(dimensionServiceKey) == null) {
-                dimensionService.setSize(dimensionServiceKey, new Dimension(750, 500));
+            Project[] openProjects = ProjectManager.getInstance()
+                    .getOpenProjects();
+            Project project = openProjects.length == 1 ? openProjects[0] : null;
+            if(dimensionService.getSize(dimensionServiceKey, project) == null) {
+                dimensionService.setSize(dimensionServiceKey, new Dimension(750, 500), project);
             }
 
-            SingleConfigurableEditor editor = new SingleConfigurableEditor(form.panel, configManager, dimensionServiceKey);
+            SingleConfigurableEditor editor = new SingleConfigurableEditor(this.form.panel, configManager, dimensionServiceKey);
             editor.show();
 
-            resetEditorFrom(config);
+            this.resetEditorFrom(NginxRunSettingsEditor.this.config);
 
         }
 
         public void applyEditorTo(NginxRunConfiguration s) {
-            if (form.serverCombo.getSelectedItem() != null) {
-                NginxServerDescriptor descriptor = (NginxServerDescriptor) form.serverCombo.getSelectedItem();
+            if(this.form.serverCombo.getSelectedItem() != null) {
+                NginxServerDescriptor descriptor = (NginxServerDescriptor) this.form.serverCombo.getSelectedItem();
                 s.setServerDescriptorId(descriptor.getId());
-                s.setShowHttpLog(mediator.form.showHttpLogCheckBox.isSelected());
-                s.setHttpLogPath(mediator.form.httpLogPathField.getText());
-                s.setShowErrorLog(mediator.form.showErrorLogCheckBox.isSelected());
-                s.setErrorLogPath(mediator.form.errorLogPathField.getText());
+                s.setShowHttpLog(NginxRunSettingsEditor.this.mediator.form.showHttpLogCheckBox.isSelected());
+                s.setHttpLogPath(NginxRunSettingsEditor.this.mediator.form.httpLogPathField.getText());
+                s.setShowErrorLog(NginxRunSettingsEditor.this.mediator.form.showErrorLogCheckBox.isSelected());
+                s.setErrorLogPath(NginxRunSettingsEditor.this.mediator.form.errorLogPathField.getText());
             }
         }
 
         public void onChooseDescriptor(NginxServerDescriptor descriptor) {
-            if (descriptor != null) {
-                form.executableField.setText(descriptor.getExecutablePath());
-                form.configurationField.setText(descriptor.getConfigPath());
-                form.pidField.setText(descriptor.getPidPath());
-                form.globalsField.setText(descriptor.getGlobals());
-                form.httpLogPathField.setText(descriptor.getHttpLogPath());
-                form.errorLogPathField.setText(descriptor.getErrorLogPath());
+            if(descriptor != null) {
+                this.form.executableField.setText(descriptor.getExecutablePath());
+                this.form.configurationField.setText(descriptor.getConfigPath());
+                this.form.pidField.setText(descriptor.getPidPath());
+                this.form.globalsField.setText(descriptor.getGlobals());
+                this.form.httpLogPathField.setText(descriptor.getHttpLogPath());
+                this.form.errorLogPathField.setText(descriptor.getErrorLogPath());
             } else {
-                form.executableField.setText("");
-                form.configurationField.setText("");
-                form.pidField.setText("");
-                form.globalsField.setText("");
-                form.httpLogPathField.setText("");
-                form.errorLogPathField.setText("");
+                this.form.executableField.setText("");
+                this.form.configurationField.setText("");
+                this.form.pidField.setText("");
+                this.form.globalsField.setText("");
+                this.form.httpLogPathField.setText("");
+                this.form.errorLogPathField.setText("");
             }
         }
 
         public void onHttpLogCheckboxAction() {
-            form.httpLogPathField.setEnabled(form.showHttpLogCheckBox.isSelected());
+            this.form.httpLogPathField.setEnabled(this.form.showHttpLogCheckBox.isSelected());
         }
 
         public void onErrorLogCheckboxAction() {
-            form.errorLogPathField.setEnabled(form.showErrorLogCheckBox.isSelected());
+            this.form.errorLogPathField.setEnabled(this.form.showErrorLogCheckBox.isSelected());
         }
 
         public void resetEditorFrom(NginxRunConfiguration configuration) {
-            DefaultComboBoxModel model = (DefaultComboBoxModel) form.serverCombo.getModel();
+            DefaultComboBoxModel model = (DefaultComboBoxModel) this.form.serverCombo.getModel();
             model.removeAllElements();
             NginxServersConfiguration servers = NginxServersConfiguration.getInstance();
-            for (NginxServerDescriptor descriptor : servers.getServersDescriptors()) {
+            for(NginxServerDescriptor descriptor : servers.getServersDescriptors()) {
                 model.addElement(descriptor);
             }
             String chosenDescriptorId = configuration.getServerDescriptorId();
-            if (chosenDescriptorId != null) {
+            if(chosenDescriptorId != null) {
                 NginxServersConfiguration serversConfig = NginxServersConfiguration.getInstance();
                 NginxServerDescriptor descriptor = serversConfig.getDescriptorById(chosenDescriptorId);
-                if (descriptor != null) {
+                if(descriptor != null) {
                     model.setSelectedItem(descriptor);
                 } else {
                     model.setSelectedItem(null);
@@ -142,10 +153,10 @@ public class NginxRunSettingsEditor extends SettingsEditor<NginxRunConfiguration
             } else {
                 model.setSelectedItem(null);
             }
-            form.showHttpLogCheckBox.setSelected(configuration.isShowHttpLog());
-            form.httpLogPathField.setEnabled(configuration.isShowHttpLog());
-            form.showErrorLogCheckBox.setSelected(configuration.isShowErrorLog());
-            form.errorLogPathField.setEnabled(configuration.isShowErrorLog());
+            this.form.showHttpLogCheckBox.setSelected(configuration.isShowHttpLog());
+            this.form.httpLogPathField.setEnabled(configuration.isShowHttpLog());
+            this.form.showErrorLogCheckBox.setSelected(configuration.isShowErrorLog());
+            this.form.errorLogPathField.setEnabled(configuration.isShowErrorLog());
         }
 
     }

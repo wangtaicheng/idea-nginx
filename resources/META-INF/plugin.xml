@@ -1,7 +1,7 @@
 <idea-plugin url="https://github.com/ishchenko/idea-nginx" require-restart="false">
 
     <id>ideanginx19</id>
-    <name>idea-nginx-support</name>
+    <name>nginx-support</name>
     <vendor url="https://github.com/wangtaicheng/idea-nginx">wangtc</vendor>
 
     <description>
@@ -183,17 +183,17 @@ Thank you to the predecessors for planting trees.
                             serviceImplementation="net.ishchenko.idea.nginx.platform.WindowsSpecificTools"
                             os="windows"/>
     </extensions>
-    <application-components>
-        <component>
-            <implementation-class>net.ishchenko.idea.nginx.NginxKeywordsManager</implementation-class>
-        </component>
-        <component>
-            <implementation-class>net.ishchenko.idea.nginx.configurator.NginxConfigurationManager</implementation-class>
-        </component>
-        <component>
-            <implementation-class>net.ishchenko.idea.nginx.configurator.NginxServersConfiguration</implementation-class>
-        </component>
-    </application-components>
+    <!--    <application-components>-->
+    <!--        <component>-->
+    <!--            <implementation-class>net.ishchenko.idea.nginx.NginxKeywordsManager</implementation-class>-->
+    <!--        </component>-->
+    <!--        <component>-->
+    <!--            <implementation-class>net.ishchenko.idea.nginx.configurator.NginxConfigurationManager</implementation-class>-->
+    <!--        </component>-->
+    <!--        <component>-->
+    <!--            <implementation-class>net.ishchenko.idea.nginx.configurator.NginxServersConfiguration</implementation-class>-->
+    <!--        </component>-->
+    <!--    </application-components>-->
 
     <actions>
         <action id="nginx.reload" class="net.ishchenko.idea.nginx.run.NginxReloadAction"

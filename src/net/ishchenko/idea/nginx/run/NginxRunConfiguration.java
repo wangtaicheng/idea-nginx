@@ -24,7 +24,7 @@ import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.DefaultJDOMExternalizer;
@@ -40,6 +40,7 @@ import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.Serial;
 
 /**
  * Created by IntelliJ IDEA.
@@ -50,6 +51,8 @@ import java.io.File;
 @SuppressWarnings({"deprecation"})
 public class NginxRunConfiguration extends RunConfigurationBase {
 
+    @Serial
+    private static final long serialVersionUID = 1945808023214725526L;
     public String serverDescriptorId;
     public boolean showHttpLog;
     public boolean showErrorLog;
@@ -60,41 +63,46 @@ public class NginxRunConfiguration extends RunConfigurationBase {
         super(project, nginxConfigurationFactory, name);
     }
 
-    public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env) throws ExecutionException {
-        return new NginxRunProfileState(env, getProject());
+    @Override
+    public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env)
+            throws ExecutionException {
+        return new NginxRunProfileState(env, this.getProject());
     }
 
+    @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
 
         NginxServersConfiguration config = NginxServersConfiguration.getInstance();
-        NginxServerDescriptor descriptor = config.getDescriptorById(serverDescriptorId);
-        if (descriptor == null) {
+        NginxServerDescriptor descriptor = config.getDescriptorById(this.serverDescriptorId);
+        if(descriptor == null) {
             throw new RuntimeConfigurationException(NginxBundle.message("run.error.noserver"));
         }
 
 
-        if (showHttpLog) {
-            File accessLogFile = new File(httpLogPath);
-            if (accessLogFile.isDirectory()) {
+        if(this.showHttpLog) {
+            File accessLogFile = new File(this.httpLogPath);
+            if(accessLogFile.isDirectory()) {
                 throw new RuntimeConfigurationException("accesslog is directory");
             }
         }
 
-        if (showErrorLog) {
-            File errorLogFile = new File(errorLogPath);
-            if (errorLogFile.isDirectory()) {
+        if(this.showErrorLog) {
+            File errorLogFile = new File(this.errorLogPath);
+            if(errorLogFile.isDirectory()) {
                 throw new RuntimeConfigurationException("errorlog is directory");
             }
         }
 
 
-        VirtualFile vfile = LocalFileSystem.getInstance().findFileByPath(descriptor.getExecutablePath());
-        if (vfile == null) {
+        VirtualFile vfile = LocalFileSystem.getInstance()
+                .findFileByPath(descriptor.getExecutablePath());
+        if(vfile == null) {
             throw new RuntimeConfigurationException(NginxBundle.message("run.error.badpath"));
         } else {
 
-            PlatformDependentTools pdt = ServiceManager.getService(PlatformDependentTools.class);
-            if (!pdt.checkExecutable(vfile)) {
+            PlatformDependentTools pdt = ApplicationManager.getApplication()
+                    .getService(PlatformDependentTools.class);
+            if(!pdt.checkExecutable(vfile)) {
                 throw new RuntimeConfigurationException(NginxBundle.message("run.error.notexecutable"));
             }
 
@@ -103,11 +111,12 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     @Override
-    public void createAdditionalTabComponents(AdditionalTabComponentManager manager, final ProcessHandler startedProcess) {
+    public void createAdditionalTabComponents(AdditionalTabComponentManager manager,
+            final ProcessHandler startedProcess) {
 
-        if (showHttpLog) {
+        if(this.showHttpLog) {
 
-            final NginxLogTab httpLogTab = new NginxLogTab(getProject(), new File(httpLogPath));
+            final NginxLogTab httpLogTab = new NginxLogTab(this.getProject(), new File(this.httpLogPath));
 
             manager.addAdditionalTabComponent(httpLogTab, "errorlogtab");
             startedProcess.addProcessListener(new ProcessAdapter() {
@@ -125,9 +134,9 @@ public class NginxRunConfiguration extends RunConfigurationBase {
 
         }
 
-        if (showErrorLog) {
+        if(this.showErrorLog) {
 
-            final NginxLogTab errorLogTab = new NginxLogTab(getProject(), new File(errorLogPath));
+            final NginxLogTab errorLogTab = new NginxLogTab(this.getProject(), new File(this.errorLogPath));
 
             manager.addAdditionalTabComponent(errorLogTab, "accesslogtab");
             startedProcess.addProcessListener(new ProcessAdapter() {
@@ -159,20 +168,23 @@ public class NginxRunConfiguration extends RunConfigurationBase {
         super.writeExternal(element);
     }
 
+    @Override
     public SettingsEditor<? extends RunConfiguration> getConfigurationEditor() {
         return new NginxRunSettingsEditor(this);
     }
 
+    @Override
     public ConfigurationPerRunnerSettings createRunnerSettings(ConfigurationInfoProvider provider) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return null;  // To change body of implemented methods use File | Settings | File Templates.
     }
 
+    @Override
     public SettingsEditor<ConfigurationPerRunnerSettings> getRunnerSettingsEditor(ProgramRunner runner) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return null;  // To change body of implemented methods use File | Settings | File Templates.
     }
 
     public String getServerDescriptorId() {
-        return serverDescriptorId;
+        return this.serverDescriptorId;
     }
 
     public void setServerDescriptorId(String serverDescriptorId) {
@@ -180,7 +192,7 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     public boolean isShowHttpLog() {
-        return showHttpLog;
+        return this.showHttpLog;
     }
 
     public void setShowHttpLog(boolean showHttpLog) {
@@ -188,7 +200,7 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     public boolean isShowErrorLog() {
-        return showErrorLog;
+        return this.showErrorLog;
     }
 
     public void setShowErrorLog(boolean showErrorLog) {
@@ -196,7 +208,7 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     public String getHttpLogPath() {
-        return httpLogPath;
+        return this.httpLogPath;
     }
 
     public void setHttpLogPath(String httpLogPath) {
@@ -204,7 +216,7 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     public String getErrorLogPath() {
-        return errorLogPath;
+        return this.errorLogPath;
     }
 
     public void setErrorLogPath(String errorLogPath) {

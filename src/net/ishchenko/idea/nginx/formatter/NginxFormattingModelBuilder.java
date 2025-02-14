@@ -16,12 +16,16 @@
 
 package net.ishchenko.idea.nginx.formatter;
 
-import com.intellij.formatting.*;
+import com.intellij.formatting.FormattingContext;
+import com.intellij.formatting.FormattingModel;
+import com.intellij.formatting.FormattingModelBuilder;
+import com.intellij.formatting.Indent;
 import com.intellij.lang.ASTNode;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.codeStyle.CodeStyleSettings;
+import com.intellij.psi.formatter.FormattingDocumentModelImpl;
+import com.intellij.psi.formatter.PsiBasedFormattingModel;
 import net.ishchenko.idea.nginx.formatter.blocks.NginxBlock;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,19 +37,22 @@ import org.jetbrains.annotations.NotNull;
  */
 public class NginxFormattingModelBuilder implements FormattingModelBuilder {
 
-    @NotNull
-    public FormattingModel createModel(PsiElement element, CodeStyleSettings settings) {
 
+    @Override
+    public @NotNull FormattingModel createModel(@NotNull FormattingContext formattingContext) {
+
+        PsiElement element = formattingContext.getPsiElement();
         ASTNode node = element.getNode();
         assert node != null;
         PsiFile containingFile = element.getContainingFile();
         ASTNode astNode = containingFile.getNode();
         assert astNode != null;
-
-        return FormattingModelProvider.createFormattingModelForPsiFile(containingFile, new NginxBlock(node, Indent.getAbsoluteNoneIndent(), null), settings);
-
+        NginxBlock nginxBlock = new NginxBlock(node, Indent.getAbsoluteNoneIndent(), null);
+        return new PsiBasedFormattingModel(containingFile, nginxBlock, FormattingDocumentModelImpl.createOn(containingFile));
     }
 
+
+    @Override
     public TextRange getRangeAffectingIndent(PsiFile file, int offset, ASTNode elementAtOffset) {
         return null;
     }

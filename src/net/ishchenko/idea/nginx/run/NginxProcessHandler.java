@@ -23,7 +23,7 @@ import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.text.StringUtil;
@@ -36,6 +36,7 @@ import net.ishchenko.idea.nginx.platform.PlatformDependentTools;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 
 /**
  * Created by IntelliJ IDEA.
@@ -46,6 +47,8 @@ import java.io.IOException;
 public class NginxProcessHandler extends OSProcessHandler {
 
     public static final Logger LOG = Logger.getInstance("#net.ishchenko.idea.nginx.run.NginxProcessHandler");
+    @Serial
+    private static final long serialVersionUID = -4205684666686342821L;
 
     private NginxServerDescriptor descriptorCopy;
     private ConsoleView console;
@@ -62,25 +65,29 @@ public class NginxProcessHandler extends OSProcessHandler {
 
         String descriptorId = config.getServerDescriptorId();
 
-        NginxServerDescriptor descriptor = NginxServersConfiguration.getInstance().getDescriptorById(descriptorId);
-        if (descriptor == null) {
+        NginxServerDescriptor descriptor = NginxServersConfiguration.getInstance()
+                .getDescriptorById(descriptorId);
+        if(descriptor == null) {
             throw new ExecutionException(NginxBundle.message("run.error.servernotfound"));
         }
 
         NginxServerDescriptor descriptorCopy = descriptor.clone();
 
-        VirtualFile executableVirtualFile = LocalFileSystem.getInstance().findFileByPath(descriptorCopy.getExecutablePath());
-        if (executableVirtualFile == null || executableVirtualFile.isDirectory()) {
+        VirtualFile executableVirtualFile = LocalFileSystem.getInstance()
+                .findFileByPath(descriptorCopy.getExecutablePath());
+        if(executableVirtualFile == null || executableVirtualFile.isDirectory()) {
             throw new ExecutionException(NginxBundle.message("run.error.badpath", descriptorCopy.getExecutablePath()));
         }
 
-        PlatformDependentTools pdt = ServiceManager.getService(PlatformDependentTools.class);
+        PlatformDependentTools pdt = ApplicationManager.getApplication()
+                .getService(PlatformDependentTools.class);
 
         ProcessBuilder builder = new ProcessBuilder(pdt.getStartCommand(descriptorCopy));
-        builder.directory(new File(executableVirtualFile.getParent().getPath()));
+        builder.directory(new File(executableVirtualFile.getParent()
+                .getPath()));
         try {
             return new NginxProcessHandler(builder.start(), StringUtil.join(pdt.getStartCommand(descriptorCopy), " "), descriptorCopy.clone());
-        } catch (IOException e) {
+        } catch(IOException e) {
             throw new ExecutionException(e.getMessage(), e);
         }
 
@@ -89,22 +96,25 @@ public class NginxProcessHandler extends OSProcessHandler {
 
     @Override
     public void destroyProcess() {
-        if (tryToStop()) {
+        if(this.tryToStop()) {
             super.destroyProcess();
         } else {
 
-            console.print("Could not stop process.\n", ConsoleViewContentType.ERROR_OUTPUT);
+            this.console.print("Could not stop process.\n", ConsoleViewContentType.ERROR_OUTPUT);
 
         }
     }
 
     private boolean tryToStop() {
 
-        PlatformDependentTools pdt = ServiceManager.getService(PlatformDependentTools.class);
-        VirtualFile executableVirtualFile = LocalFileSystem.getInstance().findFileByPath(descriptorCopy.getExecutablePath());
-        String[] stopCommand = pdt.getStopCommand(descriptorCopy);
+        PlatformDependentTools pdt = ApplicationManager.getApplication()
+                .getService(PlatformDependentTools.class);
+        VirtualFile executableVirtualFile = LocalFileSystem.getInstance()
+                .findFileByPath(this.descriptorCopy.getExecutablePath());
+        String[] stopCommand = pdt.getStopCommand(this.descriptorCopy);
         ProcessBuilder builder = new ProcessBuilder(stopCommand);
-        builder.directory(new File(executableVirtualFile.getParent().getPath()));
+        builder.directory(new File(executableVirtualFile.getParent()
+                .getPath()));
         boolean successfullyStopped = false;
         try {
             OSProcessHandler osph = new OSProcessHandler(builder.start(), StringUtil.join(stopCommand, " "));
@@ -112,18 +122,19 @@ public class NginxProcessHandler extends OSProcessHandler {
                 @Override
                 public void onTextAvailable(final ProcessEvent event, Key outputType) {
                     ConsoleViewContentType contentType = ConsoleViewContentType.SYSTEM_OUTPUT;
-                    if (outputType == ProcessOutputTypes.STDERR) {
+                    if(outputType == ProcessOutputTypes.STDERR) {
                         contentType = ConsoleViewContentType.ERROR_OUTPUT;
                     }
-                    console.print(event.getText(), contentType);
+                    NginxProcessHandler.this.console.print(event.getText(), contentType);
                 }
             });
             osph.startNotify();
             osph.waitFor();
-            osph.destroyProcess(); //is that needed if waitFor has returned?
-            successfullyStopped = osph.getProcess().exitValue() == 0;
+            osph.destroyProcess(); // is that needed if waitFor has returned?
+            successfullyStopped = osph.getProcess()
+                                          .exitValue() == 0;
 
-        } catch (IOException e) {
+        } catch(IOException e) {
             LOG.error(e);
         }
 
@@ -136,6 +147,6 @@ public class NginxProcessHandler extends OSProcessHandler {
     }
 
     public NginxServerDescriptor getDescriptor() {
-        return descriptorCopy;
+        return this.descriptorCopy;
     }
 }

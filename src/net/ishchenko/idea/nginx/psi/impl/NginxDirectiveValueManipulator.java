@@ -1,6 +1,5 @@
 package net.ishchenko.idea.nginx.psi.impl;
 
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.util.TextRange;
@@ -21,15 +20,24 @@ public class NginxDirectiveValueManipulator extends AbstractElementManipulator<N
     /**
      * Some included file name has been changed. Changing value text and rebuilding configuration file types mapping
      */
-    public NginxDirectiveValue handleContentChange(NginxDirectiveValue element, TextRange range, String newContent) throws IncorrectOperationException {
+    @Override
+    public NginxDirectiveValue handleContentChange(NginxDirectiveValue element, TextRange range, String newContent)
+            throws IncorrectOperationException {
 
         String oldText = element.getText();
         String newText = oldText.substring(0, range.getStartOffset()) + newContent + oldText.substring(range.getEndOffset());
-        Document document = FileDocumentManager.getInstance().getDocument(element.getContainingFile().getVirtualFile());
-        document.replaceString(element.getTextRange().getStartOffset(), element.getTextRange().getEndOffset(), newText);
-        PsiDocumentManager.getInstance(element.getProject()).commitDocument(document);
+        Document document = FileDocumentManager.getInstance()
+                .getDocument(element.getContainingFile()
+                        .getVirtualFile());
+        assert document != null;
+        document.replaceString(element.getTextRange()
+                .getStartOffset(), element.getTextRange()
+                .getEndOffset(), newText);
+        PsiDocumentManager.getInstance(element.getProject())
+                .commitDocument(document);
 
-        NginxServersConfiguration nginxServersConfiguration = ApplicationManager.getApplication().getComponent(NginxServersConfiguration.class);
+        NginxServersConfiguration nginxServersConfiguration = NginxServersConfiguration
+                .getInstance();
         nginxServersConfiguration.rebuildFilepaths();
 
         return element;

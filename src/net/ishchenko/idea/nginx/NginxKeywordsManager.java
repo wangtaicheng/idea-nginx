@@ -17,21 +17,15 @@
 package net.ishchenko.idea.nginx;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.BaseComponent;
+import com.intellij.openapi.components.Service;
 import com.intellij.util.Range;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by IntelliJ IDEA.
@@ -39,9 +33,10 @@ import org.jetbrains.annotations.NotNull;
  * Date: 17.07.2009
  * Time: 16:35:47
  */
-public class NginxKeywordsManager implements BaseComponent {
+@Service(Service.Level.APP)
+public final class NginxKeywordsManager {
 
-    //anything can happen inside these directive context
+    // anything can happen inside these directive context
     public static final Set<String> CHAOS_DIRECTIVES = new HashSet<>();
 
     // e.g. server -> ["NGX_MAIL_SRV_CONF", "NGX_HTTP_SRV_CONF"] etc
@@ -112,61 +107,68 @@ public class NginxKeywordsManager implements BaseComponent {
 
     private static Pattern COMPLEX_VARIABLES_PATTERN = Pattern.compile("(?:(?:arg)|(?:http)|(?:cookie)|(?:upstream_http))_\\w+");
 
-    //keyword -> [flags, flags, ...]
+    // keyword -> [flags, flags, ...]
     private Map<String, List<Set<String>>> ambiguousKeywords = new HashMap<>();
     private final String ANY_CONTEXT_FLAG = "NGX_ANY_CONF";
 
-    @Override
+    public NginxKeywordsManager() {
+        this.initComponent();
+    }
+
     public void initComponent() {
-        BufferedReader keywordsReader = new BufferedReader(new InputStreamReader(this.getClass().getResourceAsStream("/keywords.txt")));
-        BufferedReader variablesReader = new BufferedReader(new InputStreamReader(this.getClass().getResourceAsStream("/variables.txt")));
-        BufferedReader openrestyKeywordsReader = new BufferedReader(new InputStreamReader(this.getClass().getResourceAsStream("/openrestykeywords.txt")));
-        BufferedReader openrestyVariablesReader = new BufferedReader(new InputStreamReader(this.getClass().getResourceAsStream("/openrestyvariables.txt")));
+        BufferedReader keywordsReader = new BufferedReader(new InputStreamReader(this.getClass()
+                .getResourceAsStream("/keywords.txt")));
+        BufferedReader variablesReader = new BufferedReader(new InputStreamReader(this.getClass()
+                .getResourceAsStream("/variables.txt")));
+        BufferedReader openrestyKeywordsReader = new BufferedReader(new InputStreamReader(this.getClass()
+                .getResourceAsStream("/openrestykeywords.txt")));
+        BufferedReader openrestyVariablesReader = new BufferedReader(new InputStreamReader(this.getClass()
+                .getResourceAsStream("/openrestyvariables.txt")));
         Exception oops = null;
         try {
-            readKeywords(keywordsReader);
-            readVariables(variablesReader);
-            readKeywords(openrestyKeywordsReader);
-            readVariables(openrestyVariablesReader);
-        } catch (IOException e) {
+            this.readKeywords(keywordsReader);
+            this.readVariables(variablesReader);
+            this.readKeywords(openrestyKeywordsReader);
+            this.readVariables(openrestyVariablesReader);
+        } catch(IOException e) {
             oops = e;
         } finally {
             try {
                 keywordsReader.close();
-            } catch (IOException e) {
+            } catch(IOException e) {
                 oops = e;
             }
             try {
                 variablesReader.close();
-            } catch (IOException e) {
+            } catch(IOException e) {
                 oops = e;
             }
         }
-        if (oops != null) {
+        if(oops != null) {
             throw new RuntimeException(oops);
         }
     }
 
     public Set<String> getKeywords() {
-        return keywords.keySet();
+        return this.keywords.keySet();
     }
 
     public Set<String> getVariables() {
-        return variables;
+        return this.variables;
     }
 
     public boolean checkBooleanKeyword(String directive) {
-        return doCheckFlag(directive, "NGX_CONF_FLAG");
+        return this.doCheckFlag(directive, "NGX_CONF_FLAG");
     }
 
     public boolean checkCanHaveChildContext(String directive) {
-        Set<String> flags = keywords.get(directive);
-        return flags == null || flags.contains("NGX_CONF_BLOCK"); //true if directive not found
+        Set<String> flags = this.keywords.get(directive);
+        return flags == null || flags.contains("NGX_CONF_BLOCK"); // true if directive not found
     }
 
     public Set<Range<Integer>> getValueRange(String directive) {
         Set<String> rangeFlags = FLAG_TO_RANGE.keySet();
-        Set<String> flags = keywords.get(directive);
+        Set<String> flags = this.keywords.get(directive);
         return flags.stream()
                 .filter(rangeFlags::contains)
                 .map(FLAG_TO_RANGE::get)
@@ -174,23 +176,23 @@ public class NginxKeywordsManager implements BaseComponent {
     }
 
     public boolean checkCanResideInMainContext(String string) {
-        return doCheckFlag(string, "NGX_MAIN_CONF") || doCheckFlag(string, ANY_CONTEXT_FLAG);
+        return this.doCheckFlag(string, "NGX_MAIN_CONF") || this.doCheckFlag(string, this.ANY_CONTEXT_FLAG);
     }
 
     public boolean checkCanHaveParentContext(String directive, String context) {
-        //checking if directive can reside anywhere
-        if (doCheckFlag(directive, ANY_CONTEXT_FLAG)) {
+        // checking if directive can reside anywhere
+        if(this.doCheckFlag(directive, this.ANY_CONTEXT_FLAG)) {
             return true;
         }
 
         Set<String> flagsForContext = CONTEXT_TO_FLAG.getFlagsFor(context);
 
-        if (flagsForContext == null) {
-            return true; //checkCanHaveChildContext will tell the truth when called on parent
+        if(flagsForContext == null) {
+            return true; // checkCanHaveChildContext will tell the truth when called on parent
         } else {
             boolean yesWeCan = false;
-            for (String flag : flagsForContext) {
-                yesWeCan = yesWeCan || doCheckFlag(directive, flag);
+            for(String flag : flagsForContext) {
+                yesWeCan = yesWeCan || this.doCheckFlag(directive, flag);
             }
             return yesWeCan;
         }
@@ -201,9 +203,9 @@ public class NginxKeywordsManager implements BaseComponent {
      */
     public Map<String, Set<String>> getContextToDirectiveListMappings() {
         Map<String, Set<String>> result = new HashMap<>();
-        for (Map.Entry<String, Set<String>> item : CONTEXT_TO_FLAG.map.entrySet()) {
+        for(Map.Entry<String, Set<String>> item : CONTEXT_TO_FLAG.map.entrySet()) {
             String context = item.getKey();
-            Set<String> directivesForContext = getDirectivesThatCanResideIn(context);
+            Set<String> directivesForContext = this.getDirectivesThatCanResideIn(context);
             result.put(context, directivesForContext);
         }
         return result;
@@ -215,13 +217,15 @@ public class NginxKeywordsManager implements BaseComponent {
      */
     public Set<String> getDirectivesThatCanResideIn(String context) {
         Set<String> flags = CONTEXT_TO_FLAG.getFlagsFor(context);
-        if (flags == null) { //unknown parent - let's allow for any directove
-            return keywords.keySet();
+        if(flags == null) { // unknown parent - let's allow for any directove
+            return this.keywords.keySet();
         }
         Set<String> result = new HashSet<>();
-        for (Map.Entry<String, Set<String>> entry : keywords.entrySet()) {
-            for (String flag : flags) {
-                if (entry.getValue().contains(flag) || entry.getValue().contains(ANY_CONTEXT_FLAG)) {
+        for(Map.Entry<String, Set<String>> entry : this.keywords.entrySet()) {
+            for(String flag : flags) {
+                if(entry.getValue()
+                           .contains(flag) || entry.getValue()
+                           .contains(this.ANY_CONTEXT_FLAG)) {
                     result.add(entry.getKey());
                 }
             }
@@ -231,8 +235,8 @@ public class NginxKeywordsManager implements BaseComponent {
 
     public Set<String> getDirectivesThatCanResideInMainContext() {
         Set<String> result = new HashSet<>();
-        for (Map.Entry<String, Set<String>> entry : keywords.entrySet()) {
-            if (checkCanResideInMainContext(entry.getKey())) {
+        for(Map.Entry<String, Set<String>> entry : this.keywords.entrySet()) {
+            if(this.checkCanResideInMainContext(entry.getKey())) {
                 result.add(entry.getKey());
             }
         }
@@ -240,45 +244,37 @@ public class NginxKeywordsManager implements BaseComponent {
     }
 
     public boolean isValidInnerVariable(String name) {
-        return variables.contains(name) || COMPLEX_VARIABLES_PATTERN.matcher(name).matches();
+        return this.variables.contains(name) || COMPLEX_VARIABLES_PATTERN.matcher(name)
+                .matches();
     }
 
     private boolean doCheckFlag(String directive, String flag) {
-        Set<String> flags = keywords.get(directive);
+        Set<String> flags = this.keywords.get(directive);
         return flags != null && flags.contains(flag);
     }
 
     private void readKeywords(BufferedReader reader) throws IOException {
         String line;
-        while ((line = reader.readLine()) != null) {
+        while((line = reader.readLine()) != null) {
             String[] splitLine = line.split(" ");
 
             String keyword = splitLine[0];
-            Set<String> flags = new HashSet<>(Arrays.asList(splitLine).subList(1, splitLine.length));
-            if (!keywords.containsKey(keyword)) {
-                keywords.put(keyword, flags);
+            Set<String> flags = new HashSet<>(Arrays.asList(splitLine)
+                    .subList(1, splitLine.length));
+            if(!this.keywords.containsKey(keyword)) {
+                this.keywords.put(keyword, flags);
             } else {
-                keywords.get(keyword).addAll(flags);
+                this.keywords.get(keyword)
+                        .addAll(flags);
             }
         }
     }
 
     private void readVariables(BufferedReader variablesReader) throws IOException {
         String line;
-        while ((line = variablesReader.readLine()) != null) {
-            variables.add(line);
+        while((line = variablesReader.readLine()) != null) {
+            this.variables.add(line);
         }
-    }
-
-    @Override
-    public void disposeComponent() {
-        //do nothing
-    }
-
-    @NotNull
-    @Override
-    public String getComponentName() {
-        return "nginx.keywords";
     }
 
 
@@ -287,16 +283,17 @@ public class NginxKeywordsManager implements BaseComponent {
 
         void add(String context, String... flags) {
             Set<String> set = new HashSet<>(Arrays.asList(flags));
-            map.put(context, set);
+            this.map.put(context, set);
         }
 
         Set<String> getFlagsFor(String context) {
-            return map.get(context);
+            return this.map.get(context);
         }
     }
 
     public static NginxKeywordsManager getInstance() {
-        return ApplicationManager.getApplication().getComponent(NginxKeywordsManager.class);
+        return ApplicationManager.getApplication()
+                .getService(NginxKeywordsManager.class);
     }
 }
 

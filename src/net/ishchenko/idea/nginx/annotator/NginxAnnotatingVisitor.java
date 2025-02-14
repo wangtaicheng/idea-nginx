@@ -18,19 +18,17 @@ package net.ishchenko.idea.nginx.annotator;
 
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.Range;
-import java.util.Optional;
-import java.util.Set;
 import net.ishchenko.idea.nginx.NginxBundle;
 import net.ishchenko.idea.nginx.NginxKeywordsManager;
 import net.ishchenko.idea.nginx.configurator.NginxServerDescriptor;
 import net.ishchenko.idea.nginx.configurator.NginxServersConfiguration;
-import net.ishchenko.idea.nginx.psi.NginxComplexValue;
-import net.ishchenko.idea.nginx.psi.NginxContext;
-import net.ishchenko.idea.nginx.psi.NginxDirective;
-import net.ishchenko.idea.nginx.psi.NginxDirectiveName;
-import net.ishchenko.idea.nginx.psi.NginxInnerVariable;
+import net.ishchenko.idea.nginx.psi.*;
+
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -61,41 +59,47 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
     @Override
     public void visitDirective(NginxDirective node) {
 
-        if (node.isInChaosContext()) {
-            return; //directive resides in context like charset_map where almost arbitrary contents are possible
+        if(node.isInChaosContext()) {
+            return; // directive resides in context like charset_map where almost arbitrary contents are possible
         }
-        if (!checkNameIsLegal(node.getDirectiveName())) {
-            return; //name is not known - no point for further investigation
+        if(!this.checkNameIsLegal(node.getDirectiveName())) {
+            return; // name is not known - no point for further investigation
         }
 
-        //ok, now we know that directive does exist. let's do some more advanced checks.
-        checkDeprecatedDirectives(node);
-        checkParentContext(node);
-        checkChildContext(node);
-        checkValueCount(node);
+        // ok, now we know that directive does exist. let's do some more advanced checks.
+        this.checkDeprecatedDirectives(node);
+        this.checkParentContext(node);
+        this.checkChildContext(node);
+        this.checkValueCount(node);
 
     }
 
     @Override
     public void visitComplexValue(NginxComplexValue node) {
 
-        if (node.getDirective().isInChaosContext()) return;
+        if(node.getDirective()
+                .isInChaosContext()) {
+            return;
+        }
 
-        String directiveName = node.getDirective().getNameString();
-        if (keywords.checkBooleanKeyword(directiveName)) {
-            checkBooleanValue(node, directiveName);
+        String directiveName = node.getDirective()
+                .getNameString();
+        if(this.keywords.checkBooleanKeyword(directiveName)) {
+            this.checkBooleanValue(node, directiveName);
         }
     }
 
     @Override
     public void visitInnerVariable(NginxInnerVariable node) {
 
-        //should I cut $ in NginxInnerVariable itself?
+        // should I cut $ in NginxInnerVariable itself?
         // get references will return 1 for itself
-        if (!keywords.isValidInnerVariable(node.getName())
-                && ((node.getReference() != null && node.getReference().resolve() == null)
-                || node.getReference() == null)) {
-            holder.createWarningAnnotation(node, NginxBundle.message("annotator.variable.notexists", node.getText()));
+        if(!this.keywords.isValidInnerVariable(node.getName())
+           && ((node.getReference() != null && node.getReference()
+                                                       .resolve() == null)
+               || node.getReference() == null)) {
+            this.holder.newAnnotation(HighlightSeverity.ERROR, NginxBundle.message("annotator.variable.notexists", node.getText()))
+                    .range(node.getTextRange());
         }
 
     }
@@ -103,8 +107,9 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
     private void checkDeprecatedDirectives(NginxDirective node) {
         String name = node.getNameString();
 
-        if (NginxKeywordsManager.OPENRESTY_DEPRECATED_KEYWORDS.contains(name)) {
-            holder.createWarningAnnotation(node, NginxBundle.message("annotator.directive.openresty.deprecated", name));
+        if(NginxKeywordsManager.OPENRESTY_DEPRECATED_KEYWORDS.contains(name)) {
+            this.holder.newAnnotation(HighlightSeverity.WARNING, NginxBundle.message("annotator.directive.openresty.deprecated", name))
+                    .range(node.getTextRange());
         }
     }
 
@@ -112,19 +117,21 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
 
         String nameString = node.getNameString();
 
-        //here comes ugly workaround for ambiguous directives.
-        //todo: resolve ambiguity properly
-        if ("server".equals(nameString)) {
+        // here comes ugly workaround for ambiguous directives.
+        // todo: resolve ambiguity properly
+        if("server".equals(nameString)) {
             NginxContext parentContext = node.getParentContext();
-            if (parentContext != null && parentContext.getDirective() != null) {
-                if ("upstream".equals(parentContext.getDirective().getNameString())) {
+            if(parentContext != null && parentContext.getDirective() != null) {
+                if("upstream".equals(parentContext.getDirective()
+                        .getNameString())) {
                     return;
                 }
             }
         }
 
-        int realRange = node.getValues().size();
-        Set<Range<Integer>> expectedRanges = keywords.getValueRange(nameString);
+        int realRange = node.getValues()
+                .size();
+        Set<Range<Integer>> expectedRanges = this.keywords.getValueRange(nameString);
 
         Optional<Range<Integer>> possibleRanges = expectedRanges.stream()
                 .filter(range -> range.isWithin(realRange))
@@ -136,21 +143,27 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
                         .get() // assume that there is always a value
         );
 
-        if (!expectedRange.isWithin(realRange)) {
+        if(!expectedRange.isWithin(realRange)) {
 
             String rangeString;
-            if (expectedRange.getFrom().equals(expectedRange.getTo())) {
-                rangeString = expectedRange.getFrom().toString();
+            if(expectedRange.getFrom()
+                    .equals(expectedRange.getTo())) {
+                rangeString = expectedRange.getFrom()
+                        .toString();
             } else {
                 rangeString = "[" + expectedRange.getFrom() + ", " + expectedRange.getTo() + "]";
             }
             String message = NginxBundle.message("annotator.directive.wrongnumberofvalues", nameString, rangeString, realRange);
 
-            for (NginxComplexValue nginxComplexValue : node.getValues()) {
-                holder.createErrorAnnotation(nginxComplexValue, message);
+            for(NginxComplexValue nginxComplexValue : node.getValues()) {
+                this.holder.newAnnotation(HighlightSeverity.ERROR, message)
+                        .range(nginxComplexValue.getTextRange());
             }
-            if (node.getValues().isEmpty()) {
-                holder.createErrorAnnotation(node.getDirectiveName(), message);
+            if(node.getValues()
+                    .isEmpty()) {
+                this.holder.newAnnotation(HighlightSeverity.ERROR, message)
+                        .range(node.getDirectiveName()
+                                .getTextRange());
             }
 
         }
@@ -158,22 +171,26 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
     }
 
     private void checkChildContext(NginxDirective node) {
-        if (node.hasContext() && !keywords.checkCanHaveChildContext(node.getNameString())) {
-            holder.createErrorAnnotation(node, NginxBundle.message("annotator.directive.canthavecontext", node.getNameString()));
+        if(node.hasContext() && !this.keywords.checkCanHaveChildContext(node.getNameString())) {
+            this.holder.newAnnotation(HighlightSeverity.ERROR, NginxBundle.message("annotator.directive.canthavecontext", node.getNameString())
+                    )
+                    .range(node.getTextRange());
         }
     }
 
     private void checkParentContext(NginxDirective node) {
         NginxContext parentContext = node.getParentContext();
-        if (parentContext == null) {
-            //top level directive checks are made only main file. other files can be potentially included 
-            if (nodeInMainConfig(node) && !keywords.checkCanResideInMainContext(node.getNameString())) {
-                holder.createWarningAnnotation(node, NginxBundle.message("annotator.directive.cantbeinmain", node.getNameString()));
+        if(parentContext == null) {
+            // top level directive checks are made only main file. other files can be potentially included
+            if(this.nodeInMainConfig(node) && !this.keywords.checkCanResideInMainContext(node.getNameString())) {
+                this.holder.newAnnotation(HighlightSeverity.WARNING, NginxBundle.message("annotator.directive.cantbeinmain", node.getNameString()))
+                        .range(node.getTextRange());
             }
         } else {
             NginxDirective parent = parentContext.getDirective();
-            if (!keywords.checkCanHaveParentContext(node.getNameString(), parent.getNameString())) {
-                holder.createWarningAnnotation(node, node.getNameString() + " cant reside in " + parent.getNameString());
+            if(!this.keywords.checkCanHaveParentContext(node.getNameString(), parent.getNameString())) {
+                this.holder.newAnnotation(HighlightSeverity.WARNING, node.getNameString() + " cant reside in " + parent.getNameString())
+                        .range(node.getTextRange());
             }
 
         }
@@ -181,9 +198,12 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
 
     private boolean nodeInMainConfig(NginxDirective node) {
         boolean isInMainConfig = false;
-        NginxServerDescriptor[] serversDescriptors = configuration.getServersDescriptors();
-        for (NginxServerDescriptor serversDescriptor : serversDescriptors) {
-            if (serversDescriptor.getConfigPath().equals(node.getContainingFile().getVirtualFile().getPath())) {
+        NginxServerDescriptor[] serversDescriptors = this.configuration.getServersDescriptors();
+        for(NginxServerDescriptor serversDescriptor : serversDescriptors) {
+            if(serversDescriptor.getConfigPath()
+                    .equals(node.getContainingFile()
+                            .getVirtualFile()
+                            .getPath())) {
                 isInMainConfig = true;
                 break;
             }
@@ -192,21 +212,25 @@ public class NginxAnnotatingVisitor extends NginxElementVisitor implements Annot
     }
 
     private void checkBooleanValue(NginxComplexValue node, String directiveName) {
-        if (node.isFirstValue()) {
-            if (!("on".equals(node.getText()) || "off".equals(node.getText()))) {
-                holder.createErrorAnnotation(node, NginxBundle.message("annotator.expected.boolean"));
+        if(node.isFirstValue()) {
+            if(!("on".equals(node.getText()) || "off".equals(node.getText()))) {
+                this.holder.newAnnotation(HighlightSeverity.ERROR, NginxBundle.message("annotator.expected.boolean"))
+                        .range(node.getTextRange());
             }
         } else {
-            holder.createErrorAnnotation(node, NginxBundle.message("annotator.not.boolean", directiveName));
+            this.holder.newAnnotation(HighlightSeverity.ERROR, NginxBundle.message("annotator.not.boolean", directiveName))
+                    .range(node.getTextRange());
         }
     }
 
     private boolean checkNameIsLegal(NginxDirectiveName node) {
 
-        if (keywords.getKeywords().contains(node.getText())) {
+        if(this.keywords.getKeywords()
+                .contains(node.getText())) {
             return true;
         } else {
-            holder.createWarningAnnotation(node, NginxBundle.message("annotator.directive.unknown", node.getText()));
+            this.holder.newAnnotation(HighlightSeverity.WARNING, NginxBundle.message("annotator.directive.unknown", node.getText()))
+                    .range(node.getTextRange());
             return false;
         }
 

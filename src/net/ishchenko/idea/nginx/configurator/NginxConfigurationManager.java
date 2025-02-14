@@ -17,13 +17,12 @@
 package net.ishchenko.idea.nginx.configurator;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.BaseComponent;
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.options.BaseConfigurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.util.IconLoader;
 import net.ishchenko.idea.nginx.NginxBundle;
 import org.jetbrains.annotations.Nls;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 
@@ -33,7 +32,8 @@ import javax.swing.*;
  * Date: 21.07.2009
  * Time: 15:10:16
  */
-public class NginxConfigurationManager extends BaseConfigurable implements BaseComponent {
+@Service(Service.Level.APP)
+public final class NginxConfigurationManager extends BaseConfigurable {
 
     private NginxServersConfiguration configuration;
     private NginxConfigurationPanel panel;
@@ -44,28 +44,14 @@ public class NginxConfigurationManager extends BaseConfigurable implements BaseC
     }
 
     public NginxServersConfiguration getConfiguration() {
-        return configuration;
+        return this.configuration;
     }
 
     public static NginxConfigurationManager getInstance() {
-        return ApplicationManager.getApplication().getComponent(NginxConfigurationManager.class);
+        return ApplicationManager.getApplication()
+                .getService(NginxConfigurationManager.class);
     }
 
-    @NotNull
-    @Override
-    public String getComponentName() {
-        return "nginx.configuration.manager";
-    }
-
-    @Override
-    public void disposeComponent() {
-
-    }
-
-    @Override
-    public void initComponent() {
-
-    }
 
     @Nls
     @Override
@@ -84,29 +70,30 @@ public class NginxConfigurationManager extends BaseConfigurable implements BaseC
 
     @Override
     public void reset() {
-        panel.reset();
+        this.panel.reset();
     }
 
     @Override
     public void apply() throws ConfigurationException {
-        panel.apply();
+        this.panel.apply();
     }
 
     @Override
     public boolean isModified() {
-        return panel.isModified();
+        return this.panel.isModified();
     }
 
     @Override
     public JComponent createComponent() {
-        if (panel == null) {
-            panel = new NginxConfigurationPanel(configuration);
+        if(this.panel == null) {
+            this.panel = new NginxConfigurationPanel(this.configuration);
         }
-        return panel.getPanel();
+        return this.panel.getPanel();
     }
+
     @Override
     public void disposeUIResources() {
-        panel = null;
+        this.panel = null;
     }
 
 }

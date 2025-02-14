@@ -16,16 +16,16 @@
 
 package net.ishchenko.idea.nginx.run;
 
-import com.intellij.execution.ExecutionManager;
 import com.intellij.execution.process.*;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.execution.ui.RunContentDescriptor;
+import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 
 /**
  * Created by IntelliJ IDEA.
@@ -48,37 +49,39 @@ import java.io.IOException;
  */
 public class NginxReloadAction extends AnAction {
 
+    @Override
     public void actionPerformed(final AnActionEvent event) {
 
         Project project = PlatformDataKeys.PROJECT.getData(event.getDataContext());
 
-        FileDocumentManager.getInstance().saveAllDocuments(); //todo: save configs only
+        FileDocumentManager.getInstance()
+                .saveAllDocuments(); // todo: save configs only
 
-        RunContentDescriptor runContentDescriptor = getRunContentDescriptor(event);
-        if (runContentDescriptor != null) {
-            if (runContentDescriptor.getProcessHandler() == null) {
+        RunContentDescriptor runContentDescriptor = this.getRunContentDescriptor(event);
+        if(runContentDescriptor != null) {
+            if(runContentDescriptor.getProcessHandler() == null) {
                 return;
             }
 
             final ConsoleView console = (ConsoleView) runContentDescriptor.getExecutionConsole();
 
             try {
-                //the action will be disabled when there's no process handler, so no npe here. i hope...
+                // the action will be disabled when there's no process handler, so no npe here. i hope...
                 NginxProcessHandler processHandler = (NginxProcessHandler) runContentDescriptor.getProcessHandler();
                 NginxServerDescriptor descriptor = processHandler.getDescriptor();
 
-                //evil user may have deleted either server configuration
-                validateDescriptor(descriptor);
+                // evil user may have deleted either server configuration
+                this.validateDescriptor(descriptor);
 
-                //it can be omitted for windows, but in linux we see silence if configuration file is invalid on reload
-                //as reload is done by SIGHUP
-                testConfig(descriptor, console, project);
+                // it can be omitted for windows, but in linux we see silence if configuration file is invalid on reload
+                // as reload is done by SIGHUP
+                this.testConfig(descriptor, console, project);
 
-                doReload(descriptor, console, project);
+                this.doReload(descriptor, console, project);
 
-            } catch (ReloadException e) {
+            } catch(ReloadException e) {
                 console.print(e.getMessage() + "\n", ConsoleViewContentType.ERROR_OUTPUT);
-            } catch (Exception e) {
+            } catch(Exception e) {
                 console.print(e.getClass() + " " + e.getMessage() + "\n", ConsoleViewContentType.ERROR_OUTPUT);
             }
 
@@ -89,34 +92,43 @@ public class NginxReloadAction extends AnAction {
 
     private void validateDescriptor(NginxServerDescriptor descriptor) throws ReloadException {
 
-        VirtualFile executable = LocalFileSystem.getInstance().findFileByPath(descriptor.getExecutablePath());
-        if (executable == null) {
+        VirtualFile executable = LocalFileSystem.getInstance()
+                .findFileByPath(descriptor.getExecutablePath());
+        if(executable == null) {
             throw new ReloadException(NginxBundle.message("run.error.badpath"));
         }
 
     }
 
-    private void testConfig(final NginxServerDescriptor descriptor, final ConsoleView console, Project project) throws ReloadException, IOException {
+    private void testConfig(final NginxServerDescriptor descriptor, final ConsoleView console, Project project)
+            throws ReloadException, IOException {
 
-        VirtualFile executableFile = LocalFileSystem.getInstance().findFileByPath(descriptor.getExecutablePath());
-        PlatformDependentTools pdt = ServiceManager.getService(PlatformDependentTools.class);
+        VirtualFile executableFile = LocalFileSystem.getInstance()
+                .findFileByPath(descriptor.getExecutablePath());
+        PlatformDependentTools pdt = ApplicationManager.getApplication()
+                .getService(PlatformDependentTools.class);
         String[] testCommand = pdt.getTestCommand(descriptor);
-        int exitValue = runAndGetExitValue(testCommand, new File(executableFile.getParent().getPath()), console);
+        int exitValue = this.runAndGetExitValue(testCommand, new File(executableFile.getParent()
+                .getPath()), console);
 
-        if (exitValue != 0) {
+        if(exitValue != 0) {
             throw new ReloadException(NginxBundle.message("run.validationfailed"));
         }
 
     }
 
-    private void doReload(NginxServerDescriptor descriptor, ConsoleView console, Project project) throws ReloadException, IOException {
+    private void doReload(NginxServerDescriptor descriptor, ConsoleView console, Project project)
+            throws ReloadException, IOException {
 
-        VirtualFile executableFile = LocalFileSystem.getInstance().findFileByPath(descriptor.getExecutablePath());
-        PlatformDependentTools pdt = ServiceManager.getService(PlatformDependentTools.class);
+        VirtualFile executableFile = LocalFileSystem.getInstance()
+                .findFileByPath(descriptor.getExecutablePath());
+        PlatformDependentTools pdt = ApplicationManager.getApplication()
+                .getService(PlatformDependentTools.class);
         String[] reloadCommand = pdt.getReloadCommand(descriptor);
-        int exitValue = runAndGetExitValue(reloadCommand, new File(executableFile.getParent().getPath()), console);
+        int exitValue = this.runAndGetExitValue(reloadCommand, new File(executableFile.getParent()
+                .getPath()), console);
 
-        if (exitValue != 0) {
+        if(exitValue != 0) {
             throw new ReloadException(NginxBundle.message("run.validationfailed"));
         }
 
@@ -131,7 +143,7 @@ public class NginxReloadAction extends AnAction {
             @Override
             public void onTextAvailable(final ProcessEvent event, Key outputType) {
                 ConsoleViewContentType contentType = ConsoleViewContentType.SYSTEM_OUTPUT;
-                if (outputType == ProcessOutputTypes.STDERR) {
+                if(outputType == ProcessOutputTypes.STDERR) {
                     contentType = ConsoleViewContentType.ERROR_OUTPUT;
                 }
                 console.print(event.getText(), contentType);
@@ -139,30 +151,33 @@ public class NginxReloadAction extends AnAction {
         });
         osph.startNotify();
         osph.waitFor();
-        osph.destroyProcess(); //is that needed if waitFor has returned?
-        return osph.getProcess().exitValue();
+        osph.destroyProcess(); // is that needed if waitFor has returned?
+        return osph.getProcess()
+                .exitValue();
     }
 
 
     @Override
     public void update(AnActionEvent e) {
-        e.getPresentation().setEnabled(isEnabled(e));
+        e.getPresentation()
+                .setEnabled(this.isEnabled(e));
     }
 
     private boolean isEnabled(AnActionEvent e) {
-        ProcessHandler processHandler = getProcessHandler(e);
+        ProcessHandler processHandler = this.getProcessHandler(e);
         return processHandler != null && !(processHandler.isProcessTerminated() || processHandler.isProcessTerminating());
     }
 
     @Nullable
     private RunContentDescriptor getRunContentDescriptor(AnActionEvent e) {
 
-        //magic copied from com.intellij.execution.actions.StopAction
+        // magic copied from com.intellij.execution.actions.StopAction
         RunContentDescriptor runContentDescriptor = LangDataKeys.RUN_CONTENT_DESCRIPTOR.getData(e.getDataContext());
-        if (runContentDescriptor == null) {
+        if(runContentDescriptor == null) {
             Project project = PlatformDataKeys.PROJECT.getData(e.getDataContext());
-            if (project != null) {
-                runContentDescriptor = ExecutionManager.getInstance(project).getContentManager().getSelectedContent();
+            if(project != null) {
+                runContentDescriptor = RunContentManager.getInstance(project)
+                        .getSelectedContent();
             }
         }
         return runContentDescriptor;
@@ -171,11 +186,14 @@ public class NginxReloadAction extends AnAction {
 
     @Nullable
     private ProcessHandler getProcessHandler(AnActionEvent e) {
-        RunContentDescriptor rcd = getRunContentDescriptor(e);
+        RunContentDescriptor rcd = this.getRunContentDescriptor(e);
         return rcd != null ? rcd.getProcessHandler() : null;
     }
 
     private static class ReloadException extends Exception {
+
+        @Serial
+        private static final long serialVersionUID = 7414194337970093027L;
 
         private ReloadException(String message) {
             super(message);

@@ -43,27 +43,35 @@ public class NginxFileType extends LanguageFileType implements FileTypeIdentifia
         return INSTANCE;
     }
 
+    @Override
     @NotNull
     public String getName() {
         return "nginx";
     }
 
+    @Override
     @NotNull
     public String getDescription() {
         return "nginx config file";
     }
 
+    @Override
     @NotNull
     public String getDefaultExtension() {
         return "nginx";
     }
 
+    @Override
     public Icon getIcon() {
-        return IconLoader.getIcon("/nginx.png");
+
+        return IconLoader.getIcon("/nginx.png", NginxFileType.class);
     }
 
+    @Override
     public boolean isMyFileType(VirtualFile virtualFile) {
-        return NginxServersConfiguration.getInstance().getFilepaths().contains(virtualFile.getPath());
+        return NginxServersConfiguration.getInstance()
+                .getFilepaths()
+                .contains(virtualFile.getPath());
     }
 
 }

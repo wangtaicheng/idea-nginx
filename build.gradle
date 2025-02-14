@@ -47,7 +47,7 @@ sourceSets {
 intellijPlatform {
     pluginConfiguration {
         id = 'net.ishchenko.idea.nginx'
-        name = 'idea-nginx-support'
+        name = 'nginx-support'
         version = project.version
 
         ideaVersion {

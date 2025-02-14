@@ -16,7 +16,7 @@
 
 package net.ishchenko.idea.nginx.configurator;
 
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.vfs.VirtualFile;
 import net.ishchenko.idea.nginx.platform.PlatformDependentTools;
@@ -27,12 +27,13 @@ public class NginxExecutableFileChooserDescriptor extends FileChooserDescriptor 
 
     public NginxExecutableFileChooserDescriptor() {
         super(true, false, false, false, false, false);
-        pdt = ServiceManager.getService(PlatformDependentTools.class);
+        this.pdt = ApplicationManager.getApplication()
+                .getService(PlatformDependentTools.class);
     }
 
     @Override
     public boolean isFileSelectable(VirtualFile file) {
         boolean superDecision = super.isFileSelectable(file);
-        return superDecision && pdt.checkExecutable(file);
+        return superDecision && this.pdt.checkExecutable(file);
     }
 }

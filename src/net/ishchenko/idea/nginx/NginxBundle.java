@@ -16,7 +16,7 @@
 
 package net.ishchenko.idea.nginx;
 
-import com.intellij.CommonBundle;
+import com.intellij.AbstractBundle;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.PropertyKey;
 
@@ -41,13 +41,15 @@ public class NginxBundle {
     }
 
     public static String message(@PropertyKey(resourceBundle = BUNDLE) String key, Object... params) {
-        return CommonBundle.message(getBundle(), key, params);
+        return AbstractBundle.message(getBundle(), key, params);
     }
 
     private static ResourceBundle getBundle() {
         ResourceBundle bundle = null;
-        if (ourBundle != null) bundle = ourBundle.get();
-        if (bundle == null) {
+        if(ourBundle != null) {
+            bundle = ourBundle.get();
+        }
+        if(bundle == null) {
             bundle = ResourceBundle.getBundle(BUNDLE);
             ourBundle = new SoftReference<>(bundle);
         }

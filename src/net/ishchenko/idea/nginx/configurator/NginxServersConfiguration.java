@@ -18,21 +18,17 @@ package net.ishchenko.idea.nginx.configurator;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.BaseComponent;
 import com.intellij.openapi.components.PersistentStateComponent;
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.xmlb.XmlSerializer;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 import org.jdom.Element;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -46,7 +42,8 @@ import org.jetbrains.annotations.Nullable;
                 @Storage(value = "$APP_CONFIG$/nginx.xml")
         }
 )
-public class NginxServersConfiguration implements BaseComponent, PersistentStateComponent<Element>, Disposable {
+@Service(Service.Level.APP)
+public final class NginxServersConfiguration implements PersistentStateComponent<Element>, Disposable {
 
     public final static String COMPONENT_NAME = "nginxServers";
 
@@ -56,30 +53,31 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
     private Set<String> cachedFilepaths;
 
     public static NginxServersConfiguration getInstance() {
-        return ApplicationManager.getApplication().getComponent(NginxServersConfiguration.class);
+        return ApplicationManager.getApplication()
+                .getService(NginxServersConfiguration.class);
     }
 
     public synchronized NginxServerDescriptor[] getServersDescriptors() {
-        if (cachedDescriptors == null) {
-            cachedDescriptors = descriptors.toArray(new NginxServerDescriptor[descriptors.size()]);
-            cachedNameToPathsMapping = extractNameToPaths();
-            cachedFilepaths = extractFilepaths();
+        if(this.cachedDescriptors == null) {
+            this.cachedDescriptors = this.descriptors.toArray(new NginxServerDescriptor[this.descriptors.size()]);
+            this.cachedNameToPathsMapping = this.extractNameToPaths();
+            this.cachedFilepaths = this.extractFilepaths();
         }
-        return cachedDescriptors;
+        return this.cachedDescriptors;
     }
 
     public synchronized void addServerDescriptor(NginxServerDescriptor descriptor) {
-        descriptors.add(descriptor);
-        cachedDescriptors = null;
-        cachedNameToPathsMapping = null;
-        cachedFilepaths = null;
+        this.descriptors.add(descriptor);
+        this.cachedDescriptors = null;
+        this.cachedNameToPathsMapping = null;
+        this.cachedFilepaths = null;
     }
 
     public synchronized void removeAllServerDescriptors() {
-        descriptors.clear();
-        cachedDescriptors = null;
-        cachedNameToPathsMapping = null;
-        cachedFilepaths = null;
+        this.descriptors.clear();
+        this.cachedDescriptors = null;
+        this.cachedNameToPathsMapping = null;
+        this.cachedFilepaths = null;
     }
 
     @Override
@@ -90,7 +88,7 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
     @Override
     public synchronized Element getState() {
         Element element = new Element("servers");
-        for (final NginxServerDescriptor description : getServersDescriptors()) {
+        for(final NginxServerDescriptor description : this.getServersDescriptors()) {
             element.addContent(XmlSerializer.serialize(description));
         }
         return element;
@@ -98,17 +96,18 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
 
     @Override
     public synchronized void loadState(final Element state) {
-        removeAllServerDescriptors();
-        for (final Object o : state.getChildren()) {
+        this.removeAllServerDescriptors();
+        for(final Object o : state.getChildren()) {
             Element element = (Element) o;
-            addServerDescriptor(XmlSerializer.deserialize(element, NginxServerDescriptor.class));
+            this.addServerDescriptor(XmlSerializer.deserialize(element, NginxServerDescriptor.class));
         }
     }
 
     @Nullable
     public synchronized NginxServerDescriptor getDescriptorById(String id) {
-        for (NginxServerDescriptor descriptor : descriptors) {
-            if (descriptor.getId().equals(id)) {
+        for(NginxServerDescriptor descriptor : this.descriptors) {
+            if(descriptor.getId()
+                    .equals(id)) {
                 return descriptor;
             }
         }
@@ -116,42 +115,43 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
     }
 
     public synchronized Map<String, Set<String>> getNameToPathsMapping() {
-        if (cachedNameToPathsMapping == null) {
-            cachedNameToPathsMapping = extractNameToPaths();
+        if(this.cachedNameToPathsMapping == null) {
+            this.cachedNameToPathsMapping = this.extractNameToPaths();
         }
-        return cachedNameToPathsMapping;
+        return this.cachedNameToPathsMapping;
     }
 
     public synchronized Set<String> getFilepaths() {
-        if (cachedFilepaths == null) {
-            cachedFilepaths = extractFilepaths();
+        if(this.cachedFilepaths == null) {
+            this.cachedFilepaths = this.extractFilepaths();
         }
-        return cachedFilepaths;
+        return this.cachedFilepaths;
     }
 
     public synchronized void rebuildFilepaths() {
 
-        //very ugly, indeed
+        // very ugly, indeed
 
-        cachedDescriptors = null;
-        getServersDescriptors();
+        this.cachedDescriptors = null;
+        this.getServersDescriptors();
 
-        cachedNameToPathsMapping = null;
-        getNameToPathsMapping();
+        this.cachedNameToPathsMapping = null;
+        this.getNameToPathsMapping();
 
-        cachedFilepaths = null;
-        getFilepaths();
+        this.cachedFilepaths = null;
+        this.getFilepaths();
 
     }
 
     private Map<String, Set<String>> extractNameToPaths() {
         Map<String, Set<String>> result = new HashMap<>();
-        for (NginxServerDescriptor descriptor : getServersDescriptors()) {
-            VirtualFile vfile = LocalFileSystem.getInstance().findFileByPath(descriptor.getConfigPath());
-            if (vfile != null) {
+        for(NginxServerDescriptor descriptor : this.getServersDescriptors()) {
+            VirtualFile vfile = LocalFileSystem.getInstance()
+                    .findFileByPath(descriptor.getConfigPath());
+            if(vfile != null) {
                 VirtualFile parent = vfile.getParent();
-                if (parent != null && parent.isDirectory()) {
-                    recursiveAdd(result, parent, 0);
+                if(parent != null && parent.isDirectory()) {
+                    this.recursiveAdd(result, parent, 0);
                 }
             }
         }
@@ -160,8 +160,8 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
 
     private Set<String> extractFilepaths() {
         Set<String> result = new HashSet<>();
-        Map<String, Set<String>> nameToPathsMapping = getNameToPathsMapping();
-        for (Map.Entry<String, Set<String>> entry : nameToPathsMapping.entrySet()) {
+        Map<String, Set<String>> nameToPathsMapping = this.getNameToPathsMapping();
+        for(Map.Entry<String, Set<String>> entry : nameToPathsMapping.entrySet()) {
             result.addAll(entry.getValue());
         }
         return result;
@@ -169,37 +169,26 @@ public class NginxServersConfiguration implements BaseComponent, PersistentState
 
     private void recursiveAdd(Map<String, Set<String>> result, VirtualFile file, int level) {
 
-        if (level > 2) {
-            //only 2 inner folders, dude. that should be enough for most cases.
-            //and it should be done the other way at all (parsing includes in conf) 
+        if(level > 2) {
+            // only 2 inner folders, dude. that should be enough for most cases.
+            // and it should be done the other way at all (parsing includes in conf)
             return;
         }
-        if (file.isDirectory()) {
-            for (VirtualFile child : file.getChildren()) {
-                recursiveAdd(result, child, level + 1);
+        if(file.isDirectory()) {
+            for(VirtualFile child : file.getChildren()) {
+                this.recursiveAdd(result, child, level + 1);
             }
         } else {
             String path = file.getPath();
             String name = path.substring(path.lastIndexOf('/') + 1);
-            if (!result.containsKey(name)) {
+            if(!result.containsKey(name)) {
                 result.put(name, new HashSet<>());
             }
-            result.get(name).add(path);
+            result.get(name)
+                    .add(path);
         }
 
     }
 
-    @NotNull
-    @Override
-    public String getComponentName() {
-        return COMPONENT_NAME;
-    }
 
-    @Override
-    public void initComponent() {
-    }
-
-    @Override
-    public void disposeComponent() {
-    }
 }
