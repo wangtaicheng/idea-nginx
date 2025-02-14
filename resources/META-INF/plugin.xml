@@ -1,8 +1,8 @@
 <idea-plugin url="https://github.com/ishchenko/idea-nginx" require-restart="false">
 
-    <id>ideanginx9</id>
+    <id>ideanginx19</id>
     <name>idea-nginx-support</name>
-    <vendor url="https://github.com/ishchenko/idea-nginx">Max Ishchenko</vendor>
+    <vendor url="https://github.com/wangtaicheng/idea-nginx">wangtc</vendor>
 
     <description>
         <![CDATA[
@@ -13,12 +13,17 @@
         By default .nginx files are registered as nginx files. To use other extensions you will need to associate those files with the correct file type.
 
         If you have the Lua extension installed Lua syntax highlighting will be enabled for *_by_lua_block directives used by the lua-nginx-module.
+Thank you to the predecessors for planting trees.
     ]]>
     </description>
 
     <depends>com.intellij.modules.lang</depends>
 
     <change-notes><![CDATA[
+       <b>0.1.12</b>
+        <ul>
+            <li>适配IDEA 2024.3</li>
+        </ul>
         <b>0.1.9</b>
         <ul>
             <li>Fix file type error in 2019.3 (<a href="https://github.com/ishchenko/idea-nginx/issues/73">issue 73</a>).</li>
