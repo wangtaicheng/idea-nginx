@@ -298,7 +298,7 @@ public class NginxConfigurationPanel {
         private boolean userAgreesThatItIsNotNginx() {
             final DialogBuilder builder = new DialogBuilder(this.serverList);
 
-            JLabel label = new JLabel(NginxBundle.message("run.notnginx"), IconLoader.getIcon("/notnginx.png"), SwingConstants.LEFT);
+            JLabel label = new JLabel(NginxBundle.message("run.notnginx"), IconLoader.getIcon("/notnginx.png", NginxConfigurationPanel.class), SwingConstants.LEFT);
             label.setUI(new MultiLineLabelUI());
 
             builder.setTitle(NginxBundle.message("run.notnginx.warning"));

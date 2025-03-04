@@ -23,6 +23,8 @@ import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
 import net.ishchenko.idea.nginx.lexer.NginxSyntaxHighlighter;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serial;
+
 /**
  * Created by IntelliJ IDEA.
  * User: Max
@@ -32,17 +34,21 @@ import org.jetbrains.annotations.NotNull;
 public class NginxLanguage extends Language {
 
     public static final NginxLanguage INSTANCE = new NginxLanguage();
+    @Serial
+    private static final long serialVersionUID = -3974420087751698594L;
 
     private NginxLanguage() {
 
         super("nginx");
 
-        SyntaxHighlighterFactory.LANGUAGE_FACTORY.addExplicitExtension(this, new SingleLazyInstanceSyntaxHighlighterFactory() {
-            @NotNull
-            protected SyntaxHighlighter createHighlighter() {
-                return new NginxSyntaxHighlighter();
-            }
-        });
+        SyntaxHighlighterFactory.getLanguageFactory()
+                .addExplicitExtension(this, new SingleLazyInstanceSyntaxHighlighterFactory() {
+                    @Override
+                    @NotNull
+                    protected SyntaxHighlighter createHighlighter() {
+                        return new NginxSyntaxHighlighter();
+                    }
+                });
     }
 
 }

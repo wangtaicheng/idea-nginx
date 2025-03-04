@@ -65,7 +65,7 @@ public final class NginxConfigurationManager extends BaseConfigurable {
     }
 
     public Icon getIcon() {
-        return IconLoader.getIcon("/nginx.png");
+        return IconLoader.getIcon("/nginx.png", NginxConfigurationManager.class);
     }
 
     @Override

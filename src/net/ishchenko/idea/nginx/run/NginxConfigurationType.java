@@ -49,7 +49,7 @@ public class NginxConfigurationType implements ConfigurationType {
 
     @Override
     public Icon getIcon() {
-        return IconLoader.getIcon("/nginx.png");
+        return IconLoader.getIcon("/nginx.png", NginxConfigurationType.class);
     }
 
     @Override

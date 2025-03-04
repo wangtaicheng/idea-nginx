@@ -58,7 +58,7 @@ public class NginxFileType extends LanguageFileType implements FileTypeIdentifia
     @Override
     @NotNull
     public String getDefaultExtension() {
-        return "nginx";
+        return "conf";
     }
 
     @Override

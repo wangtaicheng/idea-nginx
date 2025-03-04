@@ -27,11 +27,11 @@ import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.DefaultJDOMExternalizer;
 import com.intellij.openapi.util.InvalidDataException;
 import com.intellij.openapi.util.WriteExternalException;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.xmlb.XmlSerializer;
 import net.ishchenko.idea.nginx.NginxBundle;
 import net.ishchenko.idea.nginx.configurator.NginxServerDescriptor;
 import net.ishchenko.idea.nginx.configurator.NginxServersConfiguration;
@@ -158,13 +158,15 @@ public class NginxRunConfiguration extends RunConfigurationBase {
 
     @Override
     public void readExternal(Element element) throws InvalidDataException {
-        DefaultJDOMExternalizer.readExternal(this, element);
+        XmlSerializer.deserializeInto(this, element);
+        // DefaultJDOMExternalizer.readExternal(this, element);
         super.readExternal(element);
     }
 
     @Override
     public void writeExternal(Element element) throws WriteExternalException {
-        DefaultJDOMExternalizer.writeExternal(this, element);
+        XmlSerializer.serializeInto(this, element);
+        // DefaultJDOMExternalizer.writeExternal(this, element);
         super.writeExternal(element);
     }
 
