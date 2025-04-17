@@ -20,7 +20,8 @@ repositories {
 
 }
 ext {
-    since = "241"
+    since = "243"
+    until = "251.*"
 }
 dependencies {
     intellijPlatform {
@@ -52,6 +53,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = since
+            untilBuild = until
         }
     }
 

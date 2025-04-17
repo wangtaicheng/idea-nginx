@@ -18,6 +18,7 @@ package net.ishchenko.idea.nginx.configurator;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileChooser.FileChooser;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.ui.DialogBuilder;
@@ -188,7 +189,7 @@ public class NginxConfigurationPanel {
 
         public void addNewServerClicked() {
 
-            VirtualFile[] file = FileChooser.chooseFiles(new NginxExecutableFileChooserDescriptor(), this.serverList, null, null);
+            VirtualFile[] file = FileChooser.chooseFiles(new FileChooserDescriptor(true, false, false, false, false, false), this.serverList, null, null);
             if(file.length > 0) {
 
                 NginxServerDescriptor newDescriptor = this.getDescriptorFromFile(file[0]);
@@ -226,7 +227,7 @@ public class NginxConfigurationPanel {
 
             VirtualFile oldFile = LocalFileSystem.getInstance()
                     .findFileByPath(this.executableField.getText());
-            VirtualFile[] chosen = FileChooser.chooseFiles(new NginxExecutableFileChooserDescriptor(), this.serverList, null, oldFile);
+            VirtualFile[] chosen = FileChooser.chooseFiles(new FileChooserDescriptor(true, false, false, false, false, false), this.serverList, null, oldFile);
 
             if(chosen.length > 0) {
 

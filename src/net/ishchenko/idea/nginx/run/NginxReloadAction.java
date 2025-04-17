@@ -150,7 +150,13 @@ public class NginxReloadAction extends AnAction {
             }
         });
         osph.startNotify();
-        osph.waitFor();
+        try {
+            osph.waitFor();
+        } catch(Exception e) {
+            // ignore
+
+        }
+
         osph.destroyProcess(); // is that needed if waitFor has returned?
         return osph.getProcess()
                 .exitValue();

@@ -29,10 +29,12 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.io.BaseOutputReader;
 import net.ishchenko.idea.nginx.NginxBundle;
 import net.ishchenko.idea.nginx.configurator.NginxServerDescriptor;
 import net.ishchenko.idea.nginx.configurator.NginxServersConfiguration;
 import net.ishchenko.idea.nginx.platform.PlatformDependentTools;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +62,7 @@ public class NginxProcessHandler extends OSProcessHandler {
         this.descriptorCopy = descriptorCopy;
 
     }
+
 
     public static NginxProcessHandler create(NginxRunConfiguration config) throws ExecutionException {
 
@@ -148,5 +151,10 @@ public class NginxProcessHandler extends OSProcessHandler {
 
     public NginxServerDescriptor getDescriptor() {
         return this.descriptorCopy;
+    }
+
+    @Override
+    protected BaseOutputReader.@NotNull Options readerOptions() {
+        return BaseOutputReader.Options.forMostlySilentProcess();
     }
 }
