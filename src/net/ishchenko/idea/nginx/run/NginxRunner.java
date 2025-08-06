@@ -9,7 +9,7 @@ import com.intellij.execution.configurations.RunnerSettings;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.runners.AsyncProgramRunner;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.ui.ExecutionUiService;
+import com.intellij.execution.runners.RunContentBuilder;
 import com.intellij.execution.ui.RunContentDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.concurrency.Promise;
@@ -39,33 +39,14 @@ public class NginxRunner extends AsyncProgramRunner<RunnerSettings> {
     protected @NotNull Promise<RunContentDescriptor> execute(@NotNull ExecutionEnvironment environment,
             @NotNull RunProfileState runProfileState) throws ExecutionException {
         Executor executor = environment.getExecutor();
-        // RunProfileState state = environment.getState();
         return resolvedPromise(this.showRunContent(runProfileState.execute(executor, this), environment));
 
     }
-    // @Override
-    // public void execute(@NotNull ExecutionEnvironment environment, Callback callback, RunProfileState state) {
-    //     // 获取执行器
-    //     Executor executor = environment.getExecutor();
-    //     // 获取运行配置状态
-    //     // RunProfileState state = environment.getState();
-    //     if(state == null) {
-    //         return;
-    //     }
-    //
-    //     ExecutionManager.getInstance(environment.getProject())
-    //             .startRunProfile(environment, () -> {
-    //                 try {
-    //                     return resolvedPromise(this.showRunContent(state.execute(executor, this), environment));
-    //                 } catch(ExecutionException e) {
-    //                     throw new RuntimeException(e);
-    //                 }
-    //             });
-    // }
+
 
     public RunContentDescriptor showRunContent(ExecutionResult executionResult, ExecutionEnvironment environment) {
-        return ExecutionUiService.getInstance()
-                .showRunContent(executionResult, environment);
+        RunContentBuilder runContentBuilder = new RunContentBuilder(executionResult, environment);
+        return runContentBuilder.showRunContent(environment.getContentToReuse());
     }
 
 }
