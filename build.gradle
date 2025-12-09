@@ -1,7 +1,7 @@
 import org.ajoberstar.grgit.Grgit
 
 plugins {
-    id 'org.jetbrains.intellij.platform' version '2.2.1'
+    id 'org.jetbrains.intellij.platform' version '2.10.5'
     id "org.ajoberstar.grgit" version "5.0.0-rc.3"
     id "java"
     id "idea"
@@ -20,12 +20,13 @@ repositories {
 
 }
 ext {
-    since = "243"
+    since = "253"
     until = "253.*"
 }
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity '2024.3.2'
+//        intellijIdeaCommunity '2024.3.2'
+        intellijIdea '2025.3'
         bundledPlugin 'com.intellij.java'
     }
 //    implementation 'com.jgoodies:forms:1.2.1'
@@ -67,7 +68,7 @@ intellijPlatform {
 
 
 task generateDocumentation(type: JavaExec) {
-    main = 'net.ishchenko.idea.nginx.KeywordsFromSourcesGenerator'
+    mainClass = 'net.ishchenko.idea.nginx.KeywordsFromSourcesGenerator'
     classpath = sourceSets.main.runtimeClasspath
 }
 
