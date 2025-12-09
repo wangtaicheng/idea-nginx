@@ -20,7 +20,7 @@ repositories {
 
 }
 ext {
-    since = "253"
+    since = "253.28294.334"
     until = "253.*"
 }
 dependencies {
@@ -60,7 +60,7 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide("IC", since, false)
+            ide("IU", since, false)
         }
 
     }

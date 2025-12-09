@@ -19,9 +19,9 @@ package net.ishchenko.idea.nginx.run;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
 import com.intellij.execution.configurations.*;
-import com.intellij.execution.process.ProcessAdapter;
 import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.openapi.application.ApplicationManager;
@@ -64,8 +64,7 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     @Override
-    public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env)
-            throws ExecutionException {
+    public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env) throws ExecutionException {
         return new NginxRunProfileState(env, this.getProject());
     }
 
@@ -74,35 +73,33 @@ public class NginxRunConfiguration extends RunConfigurationBase {
 
         NginxServersConfiguration config = NginxServersConfiguration.getInstance();
         NginxServerDescriptor descriptor = config.getDescriptorById(this.serverDescriptorId);
-        if(descriptor == null) {
+        if (descriptor == null) {
             throw new RuntimeConfigurationException(NginxBundle.message("run.error.noserver"));
         }
 
 
-        if(this.showHttpLog) {
+        if (this.showHttpLog) {
             File accessLogFile = new File(this.httpLogPath);
-            if(accessLogFile.isDirectory()) {
+            if (accessLogFile.isDirectory()) {
                 throw new RuntimeConfigurationException("accesslog is directory");
             }
         }
 
-        if(this.showErrorLog) {
+        if (this.showErrorLog) {
             File errorLogFile = new File(this.errorLogPath);
-            if(errorLogFile.isDirectory()) {
+            if (errorLogFile.isDirectory()) {
                 throw new RuntimeConfigurationException("errorlog is directory");
             }
         }
 
 
-        VirtualFile vfile = LocalFileSystem.getInstance()
-                .findFileByPath(descriptor.getExecutablePath());
-        if(vfile == null) {
+        VirtualFile vfile = LocalFileSystem.getInstance().findFileByPath(descriptor.getExecutablePath());
+        if (vfile == null) {
             throw new RuntimeConfigurationException(NginxBundle.message("run.error.badpath"));
         } else {
 
-            PlatformDependentTools pdt = ApplicationManager.getApplication()
-                    .getService(PlatformDependentTools.class);
-            if(!pdt.checkExecutable(vfile)) {
+            PlatformDependentTools pdt = ApplicationManager.getApplication().getService(PlatformDependentTools.class);
+            if (!pdt.checkExecutable(vfile)) {
                 throw new RuntimeConfigurationException(NginxBundle.message("run.error.notexecutable"));
             }
 
@@ -111,15 +108,14 @@ public class NginxRunConfiguration extends RunConfigurationBase {
     }
 
     @Override
-    public void createAdditionalTabComponents(AdditionalTabComponentManager manager,
-            final ProcessHandler startedProcess) {
+    public void createAdditionalTabComponents(AdditionalTabComponentManager manager, final ProcessHandler startedProcess) {
 
-        if(this.showHttpLog) {
+        if (this.showHttpLog) {
 
             final NginxLogTab httpLogTab = new NginxLogTab(this.getProject(), new File(this.httpLogPath));
 
             manager.addAdditionalTabComponent(httpLogTab, "errorlogtab");
-            startedProcess.addProcessListener(new ProcessAdapter() {
+            startedProcess.addProcessListener(new ProcessListener() {
                 @Override
                 public void startNotified(ProcessEvent event) {
                     httpLogTab.poke();
@@ -134,12 +130,12 @@ public class NginxRunConfiguration extends RunConfigurationBase {
 
         }
 
-        if(this.showErrorLog) {
+        if (this.showErrorLog) {
 
             final NginxLogTab errorLogTab = new NginxLogTab(this.getProject(), new File(this.errorLogPath));
 
             manager.addAdditionalTabComponent(errorLogTab, "accesslogtab");
-            startedProcess.addProcessListener(new ProcessAdapter() {
+            startedProcess.addProcessListener(new ProcessListener() {
                 @Override
                 public void startNotified(ProcessEvent event) {
                     errorLogTab.poke();

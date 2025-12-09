@@ -147,14 +147,40 @@ public final class NginxServersConfiguration implements PersistentStateComponent
     private Map<String, Set<String>> extractNameToPaths() {
         Map<String, Set<String>> result = new HashMap<>();
         try {
+            // 检查应用是否正在关闭或已经关闭
+            if (ApplicationManager.getApplication().isDisposed()) {
+                return result;
+            }
+            
             // 使用非阻塞方式执行文件系统访问，避免在EDT上执行慢操作
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                // 再次检查应用状态
+                if (ApplicationManager.getApplication().isDisposed()) {
+                    return;
+                }
+                
                 synchronized (NginxServersConfiguration.this) {
+                    // 检查同步块内应用状态
+                    if (ApplicationManager.getApplication().isDisposed()) {
+                        return;
+                    }
+                    
                     // 在后台线程中执行文件系统访问
                     Map<String, Set<String>> resultMap = doExtractNameToPaths();
+                    
                     // 更新缓存需要在EDT上执行
                     ApplicationManager.getApplication().invokeLater(() -> {
+                        // 检查应用是否仍处于活动状态
+                        if (ApplicationManager.getApplication().isDisposed()) {
+                            return;
+                        }
+                        
                         synchronized (NginxServersConfiguration.this) {
+                            // 最后一次检查应用状态
+                            if (ApplicationManager.getApplication().isDisposed()) {
+                                return;
+                            }
+                            
                             cachedNameToPathsMapping = resultMap;
                             cachedFilepaths = extractFilepaths();
                         }
@@ -163,6 +189,7 @@ public final class NginxServersConfiguration implements PersistentStateComponent
             });
         } catch (Throwable e) {
             // 如果无法调度任务，返回空结果
+            // 不记录日志，因为这可能是在应用关闭期间发生的正常情况
         }
         return result; // 立即返回空结果，实际结果将在稍后填充
     }
