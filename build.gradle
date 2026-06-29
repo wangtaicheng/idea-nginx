@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'net.ishchenko.idea.nginx'
-version = '0.1.16'
+version = '0.1.17'
 
 repositories {
     mavenLocal()
@@ -18,7 +18,7 @@ repositories {
 
 ext {
     since = "253.28294.0"
-    until = "261.*"
+    until = "262.*"
 }
 
 dependencies {
