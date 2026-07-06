@@ -40,7 +40,7 @@ import java.util.*;
 
 @State(name = NginxServersConfiguration.COMPONENT_NAME,
         storages = {
-                @Storage(value = "3nginx.xml")
+                @Storage(value = "nginx.xml")
         }
 )
 @Service(Service.Level.APP)
