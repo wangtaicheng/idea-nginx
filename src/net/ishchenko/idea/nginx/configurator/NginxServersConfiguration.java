@@ -40,7 +40,7 @@ import java.util.*;
 
 @State(name = NginxServersConfiguration.COMPONENT_NAME,
         storages = {
-                @Storage(value = "$APP_CONFIG$/nginx.xml")
+                @Storage(value = "3nginx.xml")
         }
 )
 @Service(Service.Level.APP)
@@ -151,38 +151,38 @@ public final class NginxServersConfiguration implements PersistentStateComponent
             if (ApplicationManager.getApplication().isDisposed()) {
                 return result;
             }
-            
+
             // 使用非阻塞方式执行文件系统访问，避免在EDT上执行慢操作
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 // 再次检查应用状态
                 if (ApplicationManager.getApplication().isDisposed()) {
                     return;
                 }
-                
+
                 synchronized (NginxServersConfiguration.this) {
                     // 检查同步块内应用状态
                     if (ApplicationManager.getApplication().isDisposed()) {
                         return;
                     }
-                    
+
                     // 在后台线程中执行文件系统访问
-                    Map<String, Set<String>> resultMap = doExtractNameToPaths();
-                    
+                    Map<String, Set<String>> resultMap = this.doExtractNameToPaths();
+
                     // 更新缓存需要在EDT上执行
                     ApplicationManager.getApplication().invokeLater(() -> {
                         // 检查应用是否仍处于活动状态
                         if (ApplicationManager.getApplication().isDisposed()) {
                             return;
                         }
-                        
+
                         synchronized (NginxServersConfiguration.this) {
                             // 最后一次检查应用状态
                             if (ApplicationManager.getApplication().isDisposed()) {
                                 return;
                             }
-                            
-                            cachedNameToPathsMapping = resultMap;
-                            cachedFilepaths = extractFilepaths();
+
+                            this.cachedNameToPathsMapping = resultMap;
+                            this.cachedFilepaths = this.extractFilepaths();
                         }
                     }, ModalityState.any());
                 }
